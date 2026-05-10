@@ -23,10 +23,12 @@ export default async function handler(req, res) {
   }
 
   try {
+    console.log(`[SEARCH] phrase="${phrase}" language="${language}"`);
     const results = await searchYouTube(phrase, language);
+    console.log(`[SEARCH] found ${results.total} videos with matches`);
     return res.status(200).json(results);
   } catch (error) {
-    console.error("Search error:", error.message);
+    console.error("[SEARCH] Error:", error.message);
     return res.status(500).json({ error: "Search failed: " + error.message });
   }
 }
@@ -36,6 +38,7 @@ async function searchYouTube(phrase, language) {
   const cached = cache.get(cacheKey);
 
   if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
+    console.log(`[CACHE] Using cached result for "${phrase}"`);
     return cached.data;
   }
 
@@ -50,6 +53,7 @@ async function searchYouTube(phrase, language) {
 
   for (const mirror of mirrors) {
     try {
+      console.log(`[MIRROR] Trying ${mirror} for search...`);
       const invidUrl = `${mirror}/api/v1/search?q=${encodeURIComponent(
         phrase
       )}&type=video`;
@@ -58,6 +62,7 @@ async function searchYouTube(phrase, language) {
       if (invidRes.ok) {
         const data = await invidRes.json();
         const results = Array.isArray(data) ? data : data.results || [];
+        console.log(`[MIRROR] ${mirror} returned ${results.length} videos`);
 
         for (const item of results.slice(0, 5)) {
           if (item.videoId || item.id) {
@@ -74,18 +79,25 @@ async function searchYouTube(phrase, language) {
           }
         }
 
-        if (videos.length > 0) break;
+        if (videos.length > 0) {
+          console.log(`[MIRROR] Success! Found ${videos.length} videos`);
+          break;
+        }
+      } else {
+        console.log(`[MIRROR] ${mirror} returned ${invidRes.status}`);
       }
     } catch (error) {
-      console.warn(`Mirror ${mirror} failed:`, error.message);
+      console.warn(`[MIRROR] ${mirror} failed: ${error.message}`);
       continue;
     }
   }
 
   if (videos.length === 0) {
+    console.log(`[SEARCH] No videos found after trying all mirrors`);
     return { phrase, language, results: [] };
   }
 
+  console.log(`[SEARCH] Fetching transcripts for ${videos.length} videos...`);
   const enriched = [];
 
   for (const video of videos) {
@@ -94,6 +106,7 @@ async function searchYouTube(phrase, language) {
 
       if (transcriptData && transcriptData.segments.length > 0) {
         const matches = findMatches(transcriptData, phrase);
+        console.log(`[TRANSCRIPT] ${video.title}: ${transcriptData.segments.length} segments, ${matches.length} matches`);
 
         if (matches.length > 0) {
           enriched.push({
@@ -105,7 +118,7 @@ async function searchYouTube(phrase, language) {
         }
       }
     } catch (error) {
-      console.warn(`Transcript fetch failed for ${video.videoId}:`, error.message);
+      console.warn(`[TRANSCRIPT] Failed for ${video.videoId}: ${error.message}`);
     }
   }
 
@@ -248,6 +261,24 @@ function findMatches(transcriptData, phrase) {
         start: segment.start,
         text: segment.text,
       });
+    }
+  }
+
+  // If no exact matches, try word-by-word matching
+  if (matches.length === 0) {
+    const words = normalizedPhrase.split(/\s+/).filter(w => w.length > 2);
+    if (words.length > 0) {
+      for (const segment of transcriptData.segments) {
+        const normalizedText = normalizeText(segment.text);
+        const hasAllWords = words.every(word => normalizedText.includes(word));
+        
+        if (hasAllWords) {
+          matches.push({
+            start: segment.start,
+            text: segment.text,
+          });
+        }
+      }
     }
   }
 
