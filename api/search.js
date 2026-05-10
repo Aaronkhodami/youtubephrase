@@ -39,40 +39,47 @@ async function searchYouTube(phrase, language) {
     return cached.data;
   }
 
-  // Search using YouTube's public search endpoint
-  const searchUrl = `https://www.youtube.com/results?search_query=${encodeURIComponent(
-    phrase
-  )}&sp=EgJAAQ%3D%3D`;
-
   const videos = [];
 
-  try {
-    // Fallback: use a simple YouTube search via invidious (public mirror)
-    const invidUrl = `https://inv.nadeko.net/api/v1/search?q=${encodeURIComponent(
-      phrase
-    )}&type=video`;
-    const invidRes = await fetch(invidUrl, { timeout: 5000 });
+  // Try multiple Invidious mirrors
+  const mirrors = [
+    "https://inv.nadeko.net",
+    "https://invidious.jing.rocks",
+    "https://iv.ggtyler.dev",
+  ];
 
-    if (invidRes.ok) {
-      const data = await invidRes.json();
-      const results = Array.isArray(data) ? data : data.results || [];
+  for (const mirror of mirrors) {
+    try {
+      const invidUrl = `${mirror}/api/v1/search?q=${encodeURIComponent(
+        phrase
+      )}&type=video`;
+      const invidRes = await fetch(invidUrl, { timeout: 5000 });
 
-      for (const item of results.slice(0, 5)) {
-        if (item.videoId || item.id) {
-          const videoId = item.videoId || item.id;
-          const title = item.title || "Unknown";
+      if (invidRes.ok) {
+        const data = await invidRes.json();
+        const results = Array.isArray(data) ? data : data.results || [];
 
-          videos.push({
-            videoId,
-            title,
-            channel: item.author || "Unknown",
-            thumbnail: item.videoThumbnails?.[0]?.url || "",
-          });
+        for (const item of results.slice(0, 5)) {
+          if (item.videoId || item.id) {
+            const videoId = item.videoId || item.id;
+            const title = item.title || "Unknown";
+
+            videos.push({
+              videoId,
+              title,
+              channel: item.author || "Unknown",
+              thumbnail: item.videoThumbnails?.[0]?.url || "",
+              mirror,
+            });
+          }
         }
+
+        if (videos.length > 0) break;
       }
+    } catch (error) {
+      console.warn(`Mirror ${mirror} failed:`, error.message);
+      continue;
     }
-  } catch (error) {
-    console.warn("Invidious search failed:", error.message);
   }
 
   if (videos.length === 0) {
@@ -83,7 +90,7 @@ async function searchYouTube(phrase, language) {
 
   for (const video of videos) {
     try {
-      const transcriptData = await getTranscript(video.videoId, language);
+      const transcriptData = await getTranscript(video.videoId, language, video.mirror);
 
       if (transcriptData && transcriptData.segments.length > 0) {
         const matches = findMatches(transcriptData, phrase);
@@ -113,10 +120,11 @@ async function searchYouTube(phrase, language) {
   return result;
 }
 
-async function getTranscript(videoId, language) {
+async function getTranscript(videoId, language, mirror) {
   try {
-    // Try invidious transcript endpoint
-    const transcriptUrl = `https://inv.nadeko.net/api/v1/captions/${videoId}`;
+    // Try invidious transcript endpoint using the same mirror
+    const mirrorUrl = mirror || "https://inv.nadeko.net";
+    const transcriptUrl = `${mirrorUrl}/api/v1/captions/${videoId}`;
     const transcriptRes = await fetch(transcriptUrl, { timeout: 5000 });
 
     if (transcriptRes.ok) {
