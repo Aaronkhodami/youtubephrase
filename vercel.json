@@ -1,5 +1,5 @@
 {
-  "buildCommand": "npm install",
+  "buildCommand": "",
   "devCommand": "vercel dev",
-  "installCommand": "npm install"
+  "public": true
 }

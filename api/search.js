@@ -1,4 +1,4 @@
-import fetch from "node-fetch";
+// Node 18+ has built-in fetch
 
 const CACHE_TTL = 3600000; // 1 hour
 const cache = new Map();
