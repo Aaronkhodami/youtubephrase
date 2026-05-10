@@ -8,7 +8,7 @@ const resultTemplate = document.getElementById("result-template");
 
 const SUPPORTED_LANGS = new Set(["en", "de", "fi", "ru"]);
 const DATA_URL = "./data/catalog.json";
-const SEARCH_API = "https://youtube-phrase-match.vercel.app/api/search";
+const SEARCH_API = "https://youtubephrase.vercel.app/api/search";
 
 let catalog = [];
 let lastSearchResults = [];
