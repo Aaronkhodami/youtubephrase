@@ -46,9 +46,10 @@ async function searchYouTube(phrase, language) {
 
   // Try multiple Invidious mirrors
   const mirrors = [
+    "https://invidious.snopyta.org",
     "https://inv.nadeko.net",
-    "https://invidious.jing.rocks",
     "https://iv.ggtyler.dev",
+    "https://invidious.jing.rocks",
   ];
 
   for (const mirror of mirrors) {
