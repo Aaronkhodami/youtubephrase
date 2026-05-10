@@ -1,0 +1,16 @@
+{
+  "name": "youtube-phrase-match",
+  "version": "1.0.0",
+  "description": "YouTube phrase search with live indexing",
+  "main": "api/search.js",
+  "scripts": {
+    "dev": "vercel dev",
+    "build": "npm install"
+  },
+  "dependencies": {
+    "node-fetch": "^3.3.0"
+  },
+  "devDependencies": {
+    "vercel": "latest"
+  }
+}

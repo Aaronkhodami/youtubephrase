@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>YouTube Phrase Match</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <main class="app-shell">
+      <section class="hero">
+        <p class="kicker">Phrase Search</p>
+        <h1>Find phrases in indexed YouTube clips</h1>
+        <p class="subhead">
+          Enter a phrase and language, then search the clips already indexed for this Pages build.
+        </p>
+      </section>
+
+      <section class="search-card" aria-label="Search form">
+        <form id="search-form">
+          <div class="field field-phrase">
+            <label for="phrase">Phrase or word</label>
+            <input id="phrase" name="phrase" type="text" placeholder="e.g. machine learning" value="Large language models" required />
+          </div>
+
+          <div class="field">
+            <label for="language">Subtitle language</label>
+            <select id="language" name="language" required>
+              <option value="en">English</option>
+              <option value="de">German</option>
+              <option value="fi">Finnish</option>
+              <option value="ru">Russian</option>
+            </select>
+          </div>
+
+          <button id="search-btn" type="submit">Search Clips</button>
+        </form>
+        <p id="status" class="status" role="status" aria-live="polite"></p>
+
+        <details class="log-panel" open>
+          <summary>Search log</summary>
+          <pre id="search-log" class="search-log" aria-live="polite"></pre>
+        </details>
+      </section>
+
+      <section id="results" class="results" aria-live="polite"></section>
+    </main>
+
+    <template id="result-template">
+      <article class="result-card">
+        <header>
+          <h2 class="result-title"></h2>
+          <p class="result-meta"></p>
+        </header>
+
+        <div class="player-wrap">
+          <iframe
+            class="player"
+            title="YouTube player"
+            loading="lazy"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+            allowfullscreen
+          ></iframe>
+        </div>
+
+        <div class="match-list"></div>
+      </article>
+    </template>
+
+    <script src="app.js" type="module"></script>
+  </body>
+</html>
